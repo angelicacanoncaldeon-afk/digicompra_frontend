@@ -1,0 +1,174 @@
+Explicación sencilla de las clases del proyecto 'digicompra'
+
+1) Clase 'digicompra' (la que tiene el main)
+
+public class digicompra {
+
+    public static void main(String[] args){
+        //CREAMOS UN INSTANCIA PARA EL CRUD
+        Crud operaciones = new Crud();
+        operaciones.insertarDato(3,"jose","789");
+        operaciones.leerDatos();
+    }
+}
+
+¿Qué hace esta clase?
+
+- Es la clase principal del programa, la que se ejecuta cuando le das “Run”.
+- Dentro del método main hace esto:
+  1. Crea un objeto de la clase Crud:
+     Crud operaciones = new Crud();
+     Eso es como decir: “tengo una herramienta para trabajar con la tabla CATEGORIA”.
+  2. Llama a:
+     operaciones.insertarDato(3, "jose", "789");
+     Esto intenta insertar un nuevo registro en la tabla CATEGORIA con:
+       - idCATEGORIA = 3
+       - NOMBRE = "jose"
+       - DESCRIPCION = "789"
+  3. Luego llama a:
+     operaciones.leerDatos();
+     Esto lee todos los registros de la tabla CATEGORIA y los muestra por consola.
+
+En pocas palabras:
+'digicompra' es el punto de arranque del programa, crea el CRUD y manda a insertar y luego leer datos de la base.
+
+
+2) Clase 'dbConnection' (conexión a la base de datos)
+
+public class dbConnection {
+
+    private static final String URL = "jdbc:mysql://localhost:3306/digicompra";
+    private static final String USER = "root";
+    private static final String PASSWORD = "Angelica1109";
+
+    public static Connection conectar() {
+        Connection con = null;
+        try {
+            con = DriverManager.getConnection(URL, USER, PASSWORD);
+            System.out.println("Conexión exitosa");
+        } catch (SQLException e) {
+            System.out.println("Error en la conexión: " + e.getMessage());
+            e.printStackTrace();
+        }
+        return con;
+    }
+}
+
+¿Qué hace esta clase?
+
+- Su trabajo es conectarse a la base de datos.
+- Tiene 3 datos importantes:
+  - URL: indica dónde está la base de datos (en este caso, MySQL en tu propio PC, base 'digicompra').
+  - USER: el usuario de la BD (aquí 'root').
+  - PASSWORD: la contraseña de ese usuario.
+
+- El método:
+  public static Connection conectar()
+  hace lo siguiente:
+  1. Intenta conectarse a la base de datos con DriverManager.getConnection(...).
+  2. Si lo logra, imprime "Conexión exitosa" y devuelve ese Connection.
+  3. Si algo falla (usuario, clave, URL, servidor apagado, etc.), entra al catch, muestra el error y devuelve null.
+
+En pocas palabras:
+'dbConnection' es la clase encargada de abrir la puerta hacia MySQL. Cualquier clase que quiera hablar con la base de datos, le pide una conexión a dbConnection.conectar().
+
+
+3) Clase 'Crud' (las operaciones con la tabla CATEGORIA)
+
+public class Crud {
+
+    // Insertar datos en la tabla CATEGORIA
+    public void insertarDato(int idCATEGORIA, String NOMBRE, String DESCRIPCION) {
+
+        String query = "INSERT INTO CATEGORIA (idCATEGORIA, NOMBRE, DESCRIPCION) VALUES (?, ?, ?)";
+
+        try (Connection con = dbConnection.conectar();
+             PreparedStatement ps = con.prepareStatement(query)) {
+
+            ps.setInt(1, idCATEGORIA);
+            ps.setString(2, NOMBRE);
+            ps.setString(3, DESCRIPCION);
+
+            ps.executeUpdate();
+            System.out.println("Datos insertados correctamente.");
+
+        } catch (SQLException e) {
+            System.out.println("Error al insertar datos: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // Leer datos de la tabla CATEGORIA
+    public void leerDatos() {
+
+        String query = "SELECT * FROM CATEGORIA";
+
+        try (Connection con = dbConnection.conectar();
+             PreparedStatement ps = con.prepareStatement(query);
+             ResultSet rs = ps.executeQuery()) {
+
+            while (rs.next()) {
+                int idCATEGORIA = rs.getInt("idCATEGORIA");
+                String NOMBRE = rs.getString("NOMBRE");
+                String DESCRIPCION = rs.getString("DESCRIPCION");
+
+                System.out.println(
+                        "IDCATEGORIA: " + idCATEGORIA +
+                        " | NOMBRE: " + NOMBRE +
+                        " | DESCRIPCION: " + DESCRIPCION
+                );
+            }
+
+        } catch (SQLException e) {
+            System.out.println("Error al leer datos: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+}
+
+Método insertarDato(...)
+
+- Recibe 3 cosas: idCATEGORIA, NOMBRE, DESCRIPCION.
+- Arma esta consulta SQL:
+  INSERT INTO CATEGORIA (idCATEGORIA, NOMBRE, DESCRIPCION) VALUES (?, ?, ?)
+
+- Luego:
+  1. Pide una conexión a dbConnection.conectar().
+  2. Crea un PreparedStatement con la consulta.
+  3. Asigna los valores:
+       ps.setInt(1, idCATEGORIA);
+       ps.setString(2, NOMBRE);
+       ps.setString(3, DESCRIPCION);
+  4. Ejecuta la consulta con ps.executeUpdate().
+  5. Si todo sale bien, imprime: "Datos insertados correctamente.".
+  6. Si algo falla (por ejemplo, id repetido), captura la excepción y muestra el error.
+
+En pocas palabras:
+insertarDato prepara un INSERT y lo manda a la base de datos para guardar un nuevo registro en la tabla CATEGORIA.
+
+
+Método leerDatos()
+
+- Arma esta consulta SQL:
+  SELECT * FROM CATEGORIA
+
+- Luego:
+  1. Pide una conexión a dbConnection.conectar().
+  2. Crea un PreparedStatement con esa consulta.
+  3. Ejecuta la consulta con ps.executeQuery() y eso devuelve un ResultSet (rs).
+  4. Recorre cada fila encontrada con while (rs.next()).
+  5. En cada fila, saca los valores de las columnas:
+       idCATEGORIA, NOMBRE, DESCRIPCION.
+  6. Los imprime en consola en una línea.
+
+En pocas palabras:
+leerDatos hace un SELECT * FROM CATEGORIA, recorre todos los registros que hay en la tabla y los muestra en pantalla.
+
+
+Resumen ultra corto
+
+- 'digicompra' → Es el programa principal. Crea el Crud y le dice: “inserta un dato y luego muéstrame todo lo que hay en la tabla”.
+- 'dbConnection' → Se encarga de conectarse a la base de datos MySQL y devolver un Connection.
+- 'Crud' → Tiene las funciones para trabajar con la tabla CATEGORIA:
+  - insertarDato(...) → guarda un nuevo registro.
+  - leerDatos() → consulta e imprime todos los registros.
